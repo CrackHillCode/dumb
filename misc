@@ -1,0 +1,317 @@
+  // fmt.Println("123")
+  // _ctx := context.Background()
+  // cli, err := client.NewClientWithOpts(client.WithVersion("1.37"))
+
+  // if err != nil {
+  //  fmt.Println(err)
+  // }
+
+  // images, err := cli.ImageList(_ctx, types.ImageListOptions{})
+
+  // if err != nil {
+  //  fmt.Println(err)
+  // }
+
+  // for i, image := range images {
+  //  fmt.Println(i, image.RepoTags)
+  // }
+
+  # mitmproxy:
+  #   image: mitmproxy/mitmproxy
+  #   ports:
+  #     - 55381:8081
+  #     - 50382:8080
+  #   command: mitmweb --web-iface 0.0.0.0
+  #   volumes:
+  #     - ./mitmproxy:/home/mitmproxy/.mitmproxy
+  #   networks:
+  #     proxy_tests:
+  #       ipv4_address: 10.5.0.11
+
+
+curl -v -X PUT "http://localhost:1080/expectation" -d '{
+    "httpRequest":
+    {
+        "path": "/some/path"
+    },
+    "httpResponseTemplate":
+    {
+        "template": "return { \"statusCode\": 200, \"cookies\": { \"session\": request.headers[\"Session-Id\"][0]}, \"headers\": { \"Date\": Date() }, \"body\": JSON.stringify({method: request.method, path: request.path, body: request.body}) } ;",
+        "templateType": "JAVASCRIPT"
+    }
+}'
+
+
+
+
+curl -v -X PUT "http://localhost:1080/expectation" -d '{
+    "httpRequest":
+    {
+        "path": "/some/path"
+    },
+    "httpResponseTemplate":
+    {
+        "template": "return { \"statusCode\": 200, \"body\": { \"body\": \"asdsvgjhc\" } };",
+        "templateType": "JAVASCRIPT"
+    }
+}'
+
+
+
+  # openldap:
+  #   image: osixia/openldap
+  #   volumes:
+  #     - ./data/slapd/database:/var/lib/ldap
+  #   networks:
+  #     proxy_tests:
+  #       aliases:
+  #         - localldap
+  localstack:
+    image: frnkenstien/localstack
+    ports:
+      - "40567-40583:4567-4583"
+      - "40050:4050"
+    env_file:
+      - localstack-config.list
+    environment:
+    - VIRTUAL_HOST=whoami.local
+    volumes:
+      - "./:/tmp/workspace/"
+      - "/tmp/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      proxy_tests:
+        aliases:
+          - localaws
+  # awscli:
+  #   image: xueshanf/awscli
+  #   command: sh -c 'update-ca-certificates; sleep 50000'
+  #   volumes:
+  #     - ./mockAws:/root/.aws/
+  #     - ./certs/:/usr/local/share/ca-certificates/
+  #   dns:
+  #     - 10.5.0.10
+  #   networks:
+  #     proxy_tests:
+  #       ipv4_address: 10.5.0.7
+
+  # mail:
+  #   image: gessnerfl/fake-smtp-server
+  #   ports:
+  #     - "51025:5025"
+  #     - "51080:5080"
+  #     - "51081:5081"
+  #   environment:
+  #     - "fakesmtp.port=5025"
+  #     - "fakesmtp.persistence.maxNumberEmails=100"
+  #     - "fakesmtp.authentication.username=admin"
+  #     - "fakesmtp.authentication.password=admin"
+  #     - "server.port=5080"
+  #     - "management.port=5081"
+, "dnsChallenge"
+, "dnsChallenge"
+, "dnsChallenge"
+, "dnsChallenge"
+, "dnsChallenge"
+, "dnsChallenge"
+
+      # [frontends.traefik]
+      # backend = "traefik"
+      # entrypoints = ["https", "http"]
+      #     [frontends.traefik.routes.traefik_url]
+      #     rule = "Host:traefik.com"
+      #     [frontends.traefik.routes.httpChallenge]
+      #     rule = "Host:traefik.com"
+      # [entryPoints.dnsChallenge.redirect]
+      # # entrypoint = "http"
+      # regex = "http://(.*):5002/.well-known/acme-challenge/(.*)"
+      # replacement = "http://traefik.com/.well-known/acme-challenge/$2"
+    # [entryPoints.dnsChallenge]
+    # address = ":5002"
+      # [backends.traefik]
+      #     [backends.traefik.servers.server1]
+      #     url = "http://10.5.0.3:5002"
+,"dnsChallenge","dns"
+
+
+openssl genrsa -out aws.key 4096
+openssl req -x509 -new -nodes -key aws.key -sha256 -days 1825 -out aws.pem
+openssl req -new -key aws.key -out aws.csr
+openssl x509 -req -in aws.csr -CA aws.pem -CAkey aws.key -CAcreateserial -out aws.crt -days 1825 -sha256 -extfile aws.ext
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certs:/etc/letsencrypt/live/
+      - ./acme/:/etc/letsencrypt/
+      - ./logs:/var/log/letsencrypt
+      - ./nginx/challenges:/etc/letsencrypt/challenges
+    dns:
+      - 10.5.0.10
+    command: "certonly -d amazonaws.com,sqs.amazonaws.com -n --preferred-challenges dns --manual-auth-hook /etc/letsencrypt/auth.sh --agree-tos -m admin@techutils.in --manual --manual-public-ip-logging-ok --server http://traefik.boulder.com:4001/directory"
+    networks:
+      pokhran:
+        ipv4_address: 10.5.0.14
+
+
+        # #!/bin/sh
+
+# if [[ "$CERTBOT_DOMAIN" != fail* ]]; then
+#   wget 'http://boulder:8055/set-txt' --spider --server-response --post-data "{\"host\": \"$2\",\"value\": \"$3\"}"
+# fi
+
+
+
+################################################################
+# Global configuration
+################################################################
+
+debug = true
+logLevel = "DEBUG"
+entrypoints = ["https", "http"]
+insecureSkipVerify = true
+checkNewVersion = false
+keepTrailingSlash = false
+
+[healthcheck]
+  interval = "30"
+
+[entryPoints]
+    [entryPoints.http]
+    address = ":80"
+      # [entryPoints.http.redirect]
+      # regex = "^http://_acme-challenge.([^/]*)"
+      # replacement = "http://dnsChallenger/_acme-challenge.$1"
+      # entryPoint= "http"
+      # permanent = true
+    # [entryPoints.dnsChallenge]
+    # address = ":80"
+    [entryPoints.https]
+    address = ":443"
+      [entryPoints.https.tls]
+        [entryPoints.http.tls.clientCA]
+        files = [ "/usr/local/share/ca-certificates/amazonaws.com_cert1.pem", "/usr/local/share/ca-certificates/amazonaws.com_fullchain1.pem" ]
+        optional = false
+        [[entryPoints.https.tls.certificates]]
+        certFile="/usr/local/share/ca-certificates/amazonaws.com_fullchain1.pem"
+        keyFile="/usr/local/share/ca-certificates/amazonaws.com_privkey1.pem"
+        [[entryPoints.https.tls.certificates]]
+        certFile="/usr/local/share/ca-certificates/eu-west-1.amazonaws.com_fullchain1.pem"
+        keyFile="/usr/local/share/ca-certificates/eu-west-1.amazonaws.com_privkey1.pem"
+        [[entryPoints.https.tls.certificates]]
+        certFile="/usr/local/share/ca-certificates/queue.amazonaws.com_fullchain1.pem"
+        keyFile="/usr/local/share/ca-certificates/queue.amazonaws.com_privkey1.pem"
+    # [entryPoints.dns]
+    # address = ":53"
+      # [entryPoints.dns.redirect]
+      # regex = "^http://_acme-challenge.([^/]*)"
+      # replacement = "http://boulder"
+[file]
+  # watch = true
+  [frontends]
+      [frontends.dnsChallenge]
+      backend = "dnsChallenge"
+      entrypoints = ["http"]
+          [frontends.dnsChallenge.routes.acme_challenge]
+          rule="HostRegexp:_acme-challenge.(.*)"
+      [frontends.whoami]
+      backend = "whoami"
+      entrypoints = ["https"]
+          [frontends.whoami.routes.whoami_url]
+          rule = "Host:whoami.com"
+      # [frontends.pokhran]
+      # backend = "pokhran"
+      # entrypoints = ["https"]
+      #     [frontends.pokhran.routes.pokhran_url]
+      #     rule = "Host:webserver.pokhran.com"
+      [frontends.sqs]
+      backend = "sqs"
+      entrypoints = ["https", "http"]
+      method= ["GET","POST","PUT"]
+      # insecureSkipVerify = true
+          # [frontends.sqs.routes.sqs_url1]
+          # rule = "HostRegexp:sqs.{subdomain:[a-zA-Z0-9\\\\-]+}.amazonaws.com"
+          # [frontends.sqs.routes.sqs_url2]
+          # rule = "HostRegexp:{subdomain:[a-zA-Z0-9\\\\-]+}.queue.amazonaws.com"
+          [frontends.sqs.routes.sqs_url3]
+          rule = "Host:eu-west-1.queue.amazonaws.com"
+      [frontends.sns]
+      backend = "sns"
+      method= ["GET","POST","PUT"]
+      entrypoints = ["https", "http"]
+          [frontends.sns.routes.sns_url]
+          rule = "Host:sns.eu-west-1.amazonaws.com"
+      [frontends.awshome]
+      backend = "awshome"
+      entrypoints = ["http", "https"]
+          [frontends.awshome.routes.awshome_url]
+          rule = "Host:amazonaws.com"
+
+  [backends]
+      [backends.dnsChallenge]
+          [backends.dnsChallenge.servers.server1]
+          url = "http://dnsChallenger:80"
+      [backends.whoami]
+          [backends.whoami.servers.server1]
+          url = "http://whoami:80"
+      # [backends.pokhran]
+      #     [backends.pokhran.servers.server1]
+      #     url = "http://httpChallenge:80"
+      [backends.sqs]
+      # onHostRule = true
+          [backends.sqs.servers.server1]
+          url = "http://awsstack:4576"
+      # [backends.sns]
+      #     [backends.sns.servers.server1]
+      #     # url = "http://whoami:80"
+      #     url = "http://awsstack:4575"
+      [backends.awshome]
+          [backends.awshome.servers.server1]
+          url = "http://awsstack:4050"
+      # [backends.mockServer]
+      #     [backends.mockServer.servers.server1]
+      #     url = "http://mockServer:1080"
+[traefikLog]
+[accessLog]
+
+[api]
+  entryPoint = "traefik"
+  dashboard = true
+  address = ":8080"
+  [api.statistics]
+    recentErrors = 10
+[retry]
+  attempts = 3
+# [acme]
+#   email = "admin@amazonaws.com"
+#   storage = "/etc/traefik/acme.json"
+#   entryPoint = "https"
+#   acmeLogging = true
+#   onHostRule = true
+#   caServer = "http://traefik.boulder.com:4001/directory"
+#   [acme.dnsChallenge]
+#   provider = "exec"
+#   entryPoint="https"
+#   delayBeforeCheck = 10
+#     [[acme.domains]]
+#       main = "*.queue.amazonaws.com"
+#       sans = ["queue.amazonaws.com"]
+#     [[acme.domains]]
+#       main = "*.amazonaws.com"
+#       sans = ["amazonaws.com"]
+#     [[acme.domains]]
+#       main = "*.pokhran.com"
+#       sans = ["pokhran.com"]
+#     [[acme.domains]]
+#       main = "*.whoami.com"
+#       sans = ["whoami.com"]
+    environment:
+      - SERVICES=sqs,sns,lambda,s3
+      - DEBUG=1
+      - DEFAULT_REGION=eu-west-1
+      - PORT_WEB_UI=4050
+      - LAMBDA_EXECUTOR=docker
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - LAMBDA_REMOTE_DOCKER=false
+      - STACK_NETWORK=pokhran_pokhran
+      - USE_SSL=false
